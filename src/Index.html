@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Calendar debrief</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --bg:     #0f1419;
+        --panel:  #1a2332;
+        --panel2: #1f2c3d;
+        --text:   #e7ecf3;
+        --muted:  #8b98a5;
+        --accent: #3d8bfd;
+        --border: #2d3a4d;
+        --ok:     #3ecf8e;
+        --warn:   #f6ad55;
+        --danger: #f56565;
+        --radius: 10px;
+        --font:   ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        --mono:   'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: var(--font);
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.45;
+      }
+      .wrap {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 24px 20px 48px;
+      }
+      .app-title {
+        font-size: 1.5rem; font-weight: 700; margin: 0 0 20px;
+        letter-spacing: -0.02em; line-height: 1;
+      }
+      .app-title-accent { color: var(--accent); }
+      .sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 20px; }
+
+      /* ── tabs ── */
+      .tab-bar {
+        display: flex;
+        gap: 4px;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 24px;
+      }
+      .tab-btn {
+        padding: 9px 20px 10px;
+        font-family: var(--font);
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--muted);
+        background: none;
+        border: none;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+        cursor: pointer;
+        border-radius: 0;
+      }
+      .tab-btn:hover { color: var(--text); }
+      .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+      /* ── shared panel/button/toast/table ── */
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 16px;
+        margin-bottom: 20px;
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: flex-end;
+        margin-bottom: 12px;
+      }
+      label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 4px; }
+      input[type='number'] {
+        width: 90px; padding: 8px 10px;
+        border-radius: 8px; border: 1px solid var(--border);
+        background: var(--bg); color: var(--text);
+      }
+      button {
+        font-family: var(--font); cursor: pointer; border: none;
+        border-radius: 8px; padding: 10px 16px;
+        font-size: 0.9rem; font-weight: 500;
+      }
+      button:disabled { opacity: 0.45; cursor: not-allowed; }
+      .btn-primary { background: var(--accent); color: #fff; }
+      .btn-small { padding: 6px 12px; font-size: 0.82rem; }
+      .btn-busy { opacity: 0.65; cursor: wait; pointer-events: none; }
+      .btn-ok { background: rgba(62,207,142,0.25); color: var(--ok); }
+      .btn-override {
+        background: rgba(245,158,11,0.15); color: #fbbf24;
+        border: 1px solid rgba(245,158,11,0.35);
+      }
+      .btn-override:hover:not(:disabled) { background: rgba(245,158,11,0.25); }
+      .toast {
+        display: none; padding: 10px 14px; border-radius: 8px;
+        margin-bottom: 14px; font-size: 0.88rem;
+      }
+      .toast.show { display: block; }
+      .toast.err {
+        background: rgba(245,101,101,0.12); border: 1px solid rgba(245,101,101,0.35); color: #ffb4b4;
+      }
+      .toast.ok {
+        background: rgba(62,207,142,0.1); border: 1px solid rgba(62,207,142,0.35); color: var(--ok);
+      }
+      .toast a { color: inherit; font-weight: 600; }
+      .summary { font-size: 0.85rem; color: var(--muted); }
+      .badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 500; }
+
+      /* ── debrief cards ── */
+      .card-list { display: flex; flex-direction: column; gap: 10px; }
+      .meeting-card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        display: grid;
+        grid-template-columns: 9rem 1fr 200px;
+        overflow: hidden;
+        transition: border-color 0.15s;
+        animation: fadeUp 0.22s ease both;
+      }
+      .meeting-card:hover { border-color: color-mix(in srgb, var(--border) 60%, var(--accent)); }
+      @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(5px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+      .card-time {
+        padding: 16px 14px;
+        border-right: 1px solid var(--border);
+        display: flex; flex-direction: column; gap: 2px;
+        background: color-mix(in srgb, var(--panel) 60%, var(--bg));
+        min-width: 0;
+      }
+      .time-weekday { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); }
+      .time-date    { font-size: 0.9rem; font-weight: 700; color: var(--text); line-height: 1.2; }
+      .time-hours   { margin-top: 6px; display: flex; flex-direction: column; gap: 1px; }
+      .time-val     { font-family: var(--mono); font-size: 0.8rem; color: var(--text); font-weight: 500; }
+      .time-allday  { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); margin-top: 6px; }
+      .time-through { font-size: 0.68rem; color: var(--muted); margin-top: 2px; }
+      .card-body {
+        padding: 14px 18px;
+        display: flex; flex-direction: column; gap: 7px;
+        min-width: 0;
+      }
+      .card-title-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 7px; }
+      .card-title     { font-size: 0.95rem; font-weight: 700; line-height: 1.3; color: var(--text); }
+      .card-attendees { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+      .attendee       { font-size: 0.75rem; color: var(--muted); display: flex; align-items: center; gap: 4px; }
+      .attendee::before { content: ''; width: 3px; height: 3px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
+      .card-action {
+        padding: 14px 16px;
+        border-left: 1px solid var(--border);
+        display: flex; flex-direction: column;
+        align-items: flex-end; justify-content: center;
+        gap: 8px;
+        min-width: 160px;
+        background: color-mix(in srgb, var(--panel) 60%, var(--bg));
+      }
+      .debrief-label { font-size: 0.65rem; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); text-align: right; }
+      .conflict-detail { font-size: 0.72rem; color: var(--muted); text-align: right; line-height: 1.35; max-width: 160px; }
+      .badge-ok   { background: rgba(62,207,142,0.15); color: var(--ok); }
+      .badge-warn { background: rgba(246,173,85,0.15);  color: var(--warn); }
+      .badge-bad  { background: rgba(245,101,101,0.12); color: #ffb4b4; }
+      .badge-external {
+        background: rgba(61,139,253,0.2); color: #a8d0ff;
+        font-weight: 600; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em;
+      }
+      .badge-response { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+      .badge-rsp-accepted { background: rgba(62,207,142,0.2);   color: var(--ok); }
+      .badge-rsp-owner    { background: rgba(139,152,165,0.25);  color: #c5d0e0; }
+      .badge-rsp-declined { background: rgba(245,101,101,0.15);  color: #ffb4b4; }
+      .badge-rsp-maybe    { background: rgba(246,173,85,0.18);   color: var(--warn); }
+      .badge-rsp-invited  { background: rgba(139,152,165,0.12);  color: var(--muted); }
+      .badge-rsp-unknown  { background: rgba(139,152,165,0.1);   color: var(--muted); font-weight: 500; text-transform: none; }
+      .muted { color: var(--muted); font-size: 0.8rem; }
+
+      /* ── focus time tab ── */
+      .week-nav {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+      }
+      .week-nav-btn {
+        width: 32px; height: 32px;
+        border-radius: 8px; border: 1px solid var(--border);
+        background: var(--panel); color: var(--text);
+        font-size: 0.85rem; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        padding: 0;
+        transition: background 0.15s, border-color 0.15s, color 0.15s;
+      }
+      .week-nav-btn:hover:not(:disabled) {
+        background: var(--panel2); border-color: var(--accent); color: var(--accent);
+      }
+      .week-nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+      .week-label {
+        font-size: 0.9rem; font-weight: 600; min-width: 210px; text-align: center;
+      }
+      .week-meta {
+        margin-left: auto;
+        font-family: var(--mono);
+        font-size: 0.72rem;
+        color: var(--muted);
+      }
+      .week-meta span { color: var(--ok); }
+
+      .week-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 12px;
+      }
+      .day-col {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 16px 14px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 11px;
+        min-height: 280px;
+      }
+      .day-col.past   { opacity: 0.45; }
+      .day-col.today  {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 1px color-mix(in srgb,var(--accent) 20%,transparent),
+                    0 4px 24px color-mix(in srgb,var(--accent) 8%,transparent);
+      }
+      .day-col.ooo    { background: color-mix(in srgb,var(--panel) 60%,var(--bg)); }
+
+      .day-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; }
+      .day-name   { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+      .day-num    { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1; margin-top: 2px; }
+      .day-month  { font-size: 0.7rem; color: var(--muted); margin-top: 1px; }
+      .day-badge  {
+        font-family: var(--mono); font-size: 0.62rem; font-weight: 500;
+        padding: 2px 7px; border-radius: 4px;
+        letter-spacing: 0.06em; text-transform: uppercase; flex-shrink: 0; margin-top: 2px;
+      }
+      .badge-today { background: color-mix(in srgb,var(--accent) 18%,transparent); color: var(--accent); border: 1px solid color-mix(in srgb,var(--accent) 40%,transparent); }
+      .badge-past  { background: color-mix(in srgb,var(--muted) 12%,transparent);  color: var(--muted);  border: 1px solid color-mix(in srgb,var(--muted) 25%,transparent); }
+      .badge-ooo   { background: color-mix(in srgb,var(--warn) 12%,transparent);   color: var(--warn);   border: 1px solid color-mix(in srgb,var(--warn) 30%,transparent); }
+
+      .day-divider { height: 1px; background: var(--border); }
+
+      .focus-stat-label { font-size: 0.65rem; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
+      .focus-stat-value { font-family: var(--mono); font-size: 1.05rem; font-weight: 500; }
+      .focus-bar-track  { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; margin-top: 4px; }
+      .focus-bar-fill   { height: 100%; border-radius: 2px; }
+      .fill-ok      { background: var(--ok); }
+      .fill-partial { background: var(--warn); }
+      .fill-low     { background: var(--danger); }
+
+      .gap-row { display: flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 0.72rem; font-weight: 500; }
+      .gap-met   { color: var(--ok); }
+      .gap-short { color: var(--danger); }
+      .gap-dot   { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+      .dot-ok    { background: var(--ok); }
+      .dot-short { background: var(--danger); }
+
+      .conflict-list { display: flex; flex-direction: column; gap: 5px; }
+      .conflict-item {
+        background: color-mix(in srgb,var(--warn) 8%,transparent);
+        border: 1px solid color-mix(in srgb,var(--warn) 25%,transparent);
+        border-radius: 6px; padding: 6px 9px;
+        font-size: 0.71rem; color: var(--warn); line-height: 1.35;
+      }
+      .conflict-item strong { font-weight: 600; display: block; }
+
+      .proposals       { display: flex; flex-direction: column; gap: 5px; flex: 1; }
+      .proposals-label { font-size: 0.65rem; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+      .proposal-item   { display: flex; align-items: center; gap: 7px; font-size: 0.7rem; }
+      .proposal-pill   { font-family: var(--mono); font-size: 0.65rem; padding: 2px 7px; border-radius: 4px; white-space: nowrap; flex-shrink: 0; }
+      .pill-new    { background: color-mix(in srgb,var(--accent) 15%,transparent); color: var(--accent); border: 1px solid color-mix(in srgb,var(--accent) 30%,transparent); }
+      .pill-split  { background: color-mix(in srgb,var(--warn) 12%,transparent);   color: var(--warn);   border: 1px solid color-mix(in srgb,var(--warn) 28%,transparent); }
+      .pill-delete { background: color-mix(in srgb,var(--danger) 10%,transparent); color: var(--danger); border: 1px solid color-mix(in srgb,var(--danger) 25%,transparent); font-size: 0.6rem; }
+      .proposal-time { font-family: var(--mono); font-size: 0.7rem; }
+      .proposal-dur  { font-family: var(--mono); font-size: 0.65rem; color: var(--muted); }
+      .proposal-orig { font-family: var(--mono); font-size: 0.68rem; color: var(--muted); text-decoration: line-through; }
+
+      .ooo-content {
+        flex: 1; display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        gap: 5px; color: var(--muted);
+      }
+      .ooo-icon { font-size: 1.5rem; opacity: 0.45; }
+      .ooo-text { font-size: 0.78rem; font-weight: 600; letter-spacing: 0.04em; }
+      .ooo-sub  { font-size: 0.68rem; text-align: center; }
+
+      .day-error { font-size: 0.75rem; color: var(--danger); flex: 1; }
+
+      .action-area { margin-top: auto; }
+      .focus-btn {
+        width: 100%; padding: 9px 14px; border-radius: 8px; border: none;
+        font-family: var(--font); font-size: 0.8rem; font-weight: 600;
+        cursor: pointer; transition: background 0.15s, transform 0.1s;
+      }
+      .focus-btn-primary { background: var(--accent); color: #fff; }
+      .focus-btn-primary:hover:not(:disabled) {
+        background: color-mix(in srgb,var(--accent) 85%,white);
+        transform: translateY(-1px);
+      }
+      .focus-btn-done { background: rgba(62,207,142,0.2); color: var(--ok); cursor: default; }
+      .focus-btn-done:disabled { opacity: 1; }
+      .focus-btn-nothing { background: transparent; border: 1px solid var(--border); color: var(--muted); cursor: default; }
+      .focus-btn-nothing:disabled { opacity: 1; }
+      .focus-loading { color: var(--muted); font-size: 0.88rem; padding: 32px 0; text-align: center; }
+
+      @media (max-width: 900px) {
+        .week-grid { grid-template-columns: repeat(3, 1fr); }
+        .week-meta { display: none; }
+      }
+      @media (max-width: 580px) {
+        .week-grid { grid-template-columns: 1fr 1fr; }
+      }
+      .version-label {
+        position: fixed; bottom: 10px; right: 14px;
+        font-size: 0.65rem; color: var(--border);
+        pointer-events: none; user-select: none;
+      }
+
+      /* ── focus title hint ── */
+      .focus-title-hint {
+        font-size: 0.78rem; color: var(--muted);
+        margin-bottom: 14px;
+      }
+      .focus-title-hint code {
+        font-family: var(--mono); font-size: 0.75rem;
+        background: var(--panel); border: 1px solid var(--border);
+        border-radius: 4px; padding: 1px 6px; color: var(--text);
+      }
+      .focus-title-hint a {
+        color: var(--accent); text-decoration: none; cursor: pointer;
+      }
+      .focus-title-hint a:hover { text-decoration: underline; }
+
+      /* ── settings tab ── */
+      .tab-btn-settings { margin-left: auto; }
+      .settings-panel { max-width: 640px; }
+      .settings-section { margin-bottom: 4px; }
+      .settings-section-title {
+        font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+        color: var(--muted); padding-bottom: 10px; margin-bottom: 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .settings-field {
+        display: grid; grid-template-columns: 1fr auto;
+        gap: 16px; padding: 12px 0; align-items: start;
+        border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+      }
+      .settings-field:last-of-type { border-bottom: none; }
+      .settings-field-name { display: block; font-size: 0.88rem; font-weight: 500; color: var(--text); }
+      .settings-field-hint { display: block; font-size: 0.75rem; color: var(--muted); margin-top: 2px; line-height: 1.4; }
+      .settings-field-input { display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
+      .settings-input-with-suffix { display: flex; align-items: center; gap: 7px; }
+      .settings-input {
+        padding: 7px 10px; background: var(--bg);
+        border: 1px solid var(--border); border-radius: 8px;
+        color: var(--text); font-family: var(--font); font-size: 0.88rem;
+      }
+      .settings-input:focus { outline: none; border-color: var(--accent); }
+      .settings-input.field-error { border-color: var(--danger); }
+      .settings-input-narrow { width: 90px; }
+      .settings-input-domain { width: 200px; }
+      .settings-input-suffix { font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
+      .settings-field-error { font-size: 0.72rem; color: #ffb4b4; text-align: right; min-height: 1em; }
+      .settings-actions { margin-top: 20px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+      .settings-save-error { font-size: 0.82rem; color: #ffb4b4; }
+
+      @media (max-width: 680px) {
+        .meeting-card  { grid-template-columns: 1fr; }
+        .card-time     { border-right: none; border-bottom: 1px solid var(--border); flex-direction: row; gap: 16px; align-items: center; }
+        .card-action   { border-left: none; border-top: 1px solid var(--border); flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: flex-start; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1 class="app-title">Calendar <span class="app-title-accent">Assistant</span></h1>
+
+      <!-- tab bar -->
+      <div class="tab-bar">
+        <button class="tab-btn active" data-tab="focus">Focus Time</button>
+        <button class="tab-btn" data-tab="debriefs">Debriefs</button>
+        <button class="tab-btn tab-btn-settings" data-tab="settings">⚙ Settings</button>
+      </div>
+
+      <!-- ══ DEBRIEFS TAB ══════════════════════════════════════════════════════ -->
+      <div id="tab-debriefs" class="tab-pane" style="display:none">
+        <p class="sub">
+          Scan lists meetings in your <strong>default</strong> calendar (with at least one guest email). A debrief is a
+          <strong>15-minute</strong> block starting exactly when the meeting ends. Scheduling checks that window against
+          <strong>accepted</strong> meetings on your calendar only — tentative or unanswered invites don't block it. If it
+          still conflicts, use <strong>Schedule anyway</strong>. New debriefs try to protect that time (including declining
+          new overlapping invites when your account supports it).
+        </p>
+        <div id="toast" class="toast"></div>
+        <div class="panel">
+          <div class="row">
+            <div>
+              <label for="scanDays">Days ahead to scan</label>
+              <input type="number" id="scanDays" min="1" max="90" />
+            </div>
+            <button type="button" class="btn-primary" id="btnScan">Scan calendar</button>
+          </div>
+          <div class="summary" id="summary"></div>
+        </div>
+        <div id="card-list" class="card-list"></div>
+      </div>
+
+      <!-- ══ SETTINGS TAB ════════════════════════════════════════════════════ -->
+      <div id="tab-settings" class="tab-pane" style="display:none">
+        <div id="settingsToast" class="toast"></div>
+        <div class="panel settings-panel">
+          <div id="settingsLoadError" class="toast err" style="display:none;margin-bottom:16px"></div>
+
+          <!-- General -->
+          <div class="settings-section">
+            <div class="settings-section-title">General</div>
+            <div class="settings-field">
+              <div>
+                <span class="settings-field-name">Internal domain</span>
+                <span class="settings-field-hint">Used to flag external attendees. Leave blank to use your sign-in account domain.</span>
+              </div>
+              <div class="settings-field-input">
+                <input type="text" id="sInternalDomain" class="settings-input settings-input-domain" placeholder="e.g. example.com">
+                <div class="settings-field-error" id="err-sInternalDomain"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Debriefs -->
+          <div class="settings-section">
+            <div class="settings-section-title">Debriefs</div>
+            <div class="settings-field">
+              <div>
+                <span class="settings-field-name">Scan window</span>
+                <span class="settings-field-hint">Default days ahead to scan. Can be adjusted per session in the Debriefs tab.</span>
+              </div>
+              <div class="settings-field-input">
+                <div class="settings-input-with-suffix">
+                  <input type="number" id="sScanDays" class="settings-input settings-input-narrow" min="1" max="90">
+                  <span class="settings-input-suffix">days</span>
+                </div>
+                <div class="settings-field-error" id="err-sScanDays"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Focus Time -->
+          <div class="settings-section">
+            <div class="settings-section-title">Focus Time</div>
+            <div class="settings-field">
+              <div>
+                <span class="settings-field-name">Daily target</span>
+                <span class="settings-field-hint">Total focus time to reach each working day.</span>
+              </div>
+              <div class="settings-field-input">
+                <div class="settings-input-with-suffix">
+                  <input type="number" id="sFocusTarget" class="settings-input settings-input-narrow" min="1">
+                  <span class="settings-input-suffix">min</span>
+                </div>
+                <div class="settings-field-error" id="err-sFocusTarget"></div>
+              </div>
+            </div>
+            <div class="settings-field">
+              <div>
+                <span class="settings-field-name">Preferred block size</span>
+                <span class="settings-field-hint">Target duration for new focus blocks.</span>
+              </div>
+              <div class="settings-field-input">
+                <div class="settings-input-with-suffix">
+                  <input type="number" id="sFocusBlock" class="settings-input settings-input-narrow" min="1">
+                  <span class="settings-input-suffix">min</span>
+                </div>
+                <div class="settings-field-error" id="err-sFocusBlock"></div>
+              </div>
+            </div>
+            <div class="settings-field">
+              <div>
+                <span class="settings-field-name">Minimum block size</span>
+                <span class="settings-field-hint">Gaps smaller than this are skipped when scheduling.</span>
+              </div>
+              <div class="settings-field-input">
+                <div class="settings-input-with-suffix">
+                  <input type="number" id="sFocusMin" class="settings-input settings-input-narrow" min="15">
+                  <span class="settings-input-suffix">min</span>
+                </div>
+                <div class="settings-field-error" id="err-sFocusMin"></div>
+              </div>
+            </div>
+            <div class="settings-field">
+              <div>
+                <span class="settings-field-name">Focus time block title</span>
+                <span class="settings-field-hint">The app detects focus blocks by this exact title. Must match the title of your existing Focus time events on Google Calendar.</span>
+              </div>
+              <div class="settings-field-input">
+                <input type="text" id="sFocusTitle" class="settings-input settings-input-domain" placeholder="Focus time">
+                <div class="settings-field-error" id="err-sFocusTitle"></div>
+              </div>
+            </div>
+            <div class="settings-field">
+              <div>
+                <span class="settings-field-name">Working hours start</span>
+                <span class="settings-field-hint">No focus blocks scheduled before this time.</span>
+              </div>
+              <div class="settings-field-input">
+                <input type="text" id="sWorkStart" class="settings-input settings-input-narrow" placeholder="09:00">
+                <div class="settings-field-error" id="err-sWorkStart"></div>
+              </div>
+            </div>
+            <div class="settings-field">
+              <div>
+                <span class="settings-field-name">Working hours end</span>
+                <span class="settings-field-hint">No focus blocks scheduled after this time.</span>
+              </div>
+              <div class="settings-field-input">
+                <input type="text" id="sWorkEnd" class="settings-input settings-input-narrow" placeholder="18:00">
+                <div class="settings-field-error" id="err-sWorkEnd"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-actions">
+            <button type="button" class="btn-primary" id="btnSaveSettings">Save settings</button>
+            <div id="settingsSaveError" class="settings-save-error" style="display:none"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ FOCUS TIME TAB ════════════════════════════════════════════════════ -->
+      <div id="tab-focus" class="tab-pane">
+        <div id="focusToast" class="toast"></div>
+        <div id="focusTitleHint" class="focus-title-hint"></div>
+        <div class="week-nav">
+          <button id="btnFocusPrev" class="week-nav-btn" disabled title="Can't go before current week">&#9664;</button>
+          <span id="weekLabel" class="week-label"></span>
+          <button id="btnFocusNext" class="week-nav-btn" title="Next week">&#9654;</button>
+          <button id="btnFocusRefresh" class="week-nav-btn" title="Refresh week">&#8635;</button>
+          <span id="focusMeta" class="week-meta"></span>
+        </div>
+        <div id="weekGrid" class="week-grid"></div>
+      </div>
+    </div>
+    <div class="version-label" id="versionLabel">v1.4 · 2026-06-16</div>
+
+    <script>
+      var INITIAL = <?!= initialInline ?>;
+      var SCAN_TIMEOUT_MS = 120000;
+      var currentEvents = [];
+      var settingsCache = null;
+      var settingsDirtyFlag = false;
+
+      // ── Debrief helpers ──────────────────────────────────────────────────────
+
+      function showToast(msg, ok, authUrl) {
+        var el = document.getElementById('toast');
+        el.className = 'toast show ' + (ok ? 'ok' : 'err');
+        el.innerHTML = '';
+        var p = document.createElement('div'); p.textContent = msg || ''; el.appendChild(p);
+        if (authUrl) {
+          el.appendChild(document.createElement('br'));
+          var a = document.createElement('a');
+          a.href = authUrl; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.textContent = 'Authorize';
+          el.appendChild(a);
+        }
+      }
+      function clearToast() { var el = document.getElementById('toast'); el.className = 'toast'; el.innerHTML = ''; }
+
+      function escapeHtml(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+      function responseBadgeHtml(ev) {
+        var r = ev.myResponse || { key:'unknown', label:'Unknown' };
+        var cls = 'badge badge-response';
+        if (r.key === 'accepted') cls += ' badge-rsp-accepted';
+        else if (r.key === 'owner') cls += ' badge-rsp-owner';
+        else if (r.key === 'declined') cls += ' badge-rsp-declined';
+        else if (r.key === 'maybe') cls += ' badge-rsp-maybe';
+        else if (r.key === 'invited') cls += ' badge-rsp-invited';
+        else cls += ' badge-rsp-unknown';
+        return '<span class="' + cls + '" title="Your RSVP on this meeting">' + escapeHtml(r.label) + '</span>';
+      }
+
+      function buildCard(ev) {
+        var card = document.createElement('div');
+        card.className = 'meeting-card';
+
+        // Left: time column
+        var timeHtml;
+        var fmt = { hour:'2-digit', minute:'2-digit', hour12: false };
+        if (ev.allDay) {
+          try {
+            var a = new Date(ev.startIso), b = new Date(ev.endIso);
+            var wday    = a.toLocaleDateString(undefined, { weekday:'short' });
+            var dateStr = a.toLocaleDateString(undefined, { day:'numeric', month:'short', year:'numeric' });
+            var endStr  = b.toLocaleDateString(undefined, { weekday:'short', day:'numeric', month:'short', year:'numeric' });
+            var thru = (dateStr !== endStr) ? '<div class="time-through">Through ' + escapeHtml(endStr) + '</div>' : '';
+            timeHtml = '<div class="card-time"><div class="time-weekday">' + escapeHtml(wday) + '</div>' +
+              '<div class="time-date">' + escapeHtml(dateStr) + '</div>' +
+              '<div class="time-allday">All day</div>' + thru + '</div>';
+          } catch(e) { timeHtml = '<div class="card-time"><div class="time-allday">All day</div></div>'; }
+        } else {
+          try {
+            var a = new Date(ev.startIso), b = new Date(ev.endIso);
+            var wday    = a.toLocaleDateString(undefined, { weekday:'short' });
+            var dateStr = a.toLocaleDateString(undefined, { day:'numeric', month:'short', year:'numeric' });
+            timeHtml = '<div class="card-time"><div class="time-weekday">' + escapeHtml(wday) + '</div>' +
+              '<div class="time-date">' + escapeHtml(dateStr) + '</div>' +
+              '<div class="time-hours">' +
+              '<span class="time-val">' + escapeHtml(a.toLocaleTimeString(undefined, fmt)) + '</span>' +
+              '<span class="time-val">' + escapeHtml(b.toLocaleTimeString(undefined, fmt)) + '</span>' +
+              '</div></div>';
+          } catch(e) { timeHtml = '<div class="card-time"><div class="time-date">—</div></div>'; }
+        }
+
+        // Centre: title, badges, attendees
+        var extBadge = ev.external === true
+          ? '<span class="badge badge-external" title="At least one invitee is outside your org domain">External</span>' : '';
+        var attendees = ev.invitees || [];
+        var attendeesHtml = attendees.length
+          ? attendees.map(function(g) { return '<span class="attendee">' + escapeHtml(g.label || g.email || '') + '</span>'; }).join('')
+          : '<span class="attendee">(none listed)</span>';
+        var bodyHtml = '<div class="card-body">' +
+          '<div class="card-title-row"><span class="card-title">' + escapeHtml(ev.title || '(no title)') + '</span>' +
+          extBadge + responseBadgeHtml(ev) + '</div>' +
+          '<div class="card-attendees">' + attendeesHtml + '</div></div>';
+
+        // Right: debrief status + action
+        var actionHtml = '<div class="card-action"><div class="debrief-label">Debrief</div>';
+        if (ev.allDay) {
+          actionHtml += '<span class="badge badge-warn">N/A</span><div class="conflict-detail">All-day event</div>';
+        } else if (ev.debrief && ev.debrief.planned) {
+          var t = ev.debrief.startIso
+            ? new Date(ev.debrief.startIso).toLocaleString(undefined, { dateStyle:'short', timeStyle:'short' }) : '';
+          actionHtml += '<span class="badge badge-ok">Planned</span>' +
+            (t ? '<div class="conflict-detail">' + escapeHtml(t) + '</div>' : '');
+        } else {
+          actionHtml += '<span class="badge badge-warn">Not planned</span>';
+          if (ev.schedule) {
+            if (ev.schedule.canSchedule) {
+              actionHtml += '<button type="button" class="btn-ok btn-small" data-act="schedule" data-id="' +
+                encodeURIComponent(ev.id) + '" data-end="' + encodeURIComponent(ev.endIso) + '">Schedule debrief</button>';
+            } else {
+              var r = ev.schedule.reason || '', d = ev.schedule.detail || '';
+              var bcls = r === 'busy' ? 'badge-bad' : 'badge-warn';
+              var blabel = r === 'busy' ? 'Conflict' : r === 'past' ? 'Past' : r === 'error' ? 'Error' : 'Unavailable';
+              actionHtml += '<span class="badge ' + bcls + '">' + blabel + '</span>';
+              if (d) actionHtml += '<div class="conflict-detail">' + escapeHtml(d) + '</div>';
+              if (r === 'busy' && ev.schedule.canOverride) {
+                actionHtml += '<button type="button" class="btn-override btn-small" data-act="schedule" data-override="1" data-id="' +
+                  encodeURIComponent(ev.id) + '" data-end="' + encodeURIComponent(ev.endIso) + '">Schedule anyway</button>';
+              }
+            }
+          }
+        }
+        actionHtml += '</div>';
+
+        card.innerHTML = timeHtml + bodyHtml + actionHtml;
+        return card;
+      }
+
+      function applyPlannedDebriefForEvent(eventId, debrief) {
+        for (var i = 0; i < currentEvents.length; i++) {
+          if (currentEvents[i].id !== eventId) continue;
+          currentEvents[i].debrief = debrief;
+          currentEvents[i].schedule = { canSchedule:false, reason:'planned', detail:'A debrief is already on the calendar for this slot.', canOverride:false };
+          renderCards(currentEvents);
+          return;
+        }
+      }
+
+      function renderCards(events) {
+        currentEvents = (events || []).slice();
+        var list = document.getElementById('card-list');
+        list.innerHTML = '';
+        currentEvents.forEach(function(ev) {
+          list.appendChild(buildCard(ev));
+        });
+        list.onclick = function(e) {
+          var btn = e.target.closest('button[data-act="schedule"]');
+          if (!btn || btn.disabled) return;
+          var id = decodeURIComponent(btn.getAttribute('data-id'));
+          var endIso = decodeURIComponent(btn.getAttribute('data-end'));
+          var override = btn.getAttribute('data-override') === '1';
+          var prevText = btn.textContent;
+          btn.disabled = true; btn.textContent = 'Scheduling…'; btn.classList.add('btn-busy');
+          google.script.run
+            .withSuccessHandler(function(res) {
+              btn.classList.remove('btn-busy');
+              if (res && res.ok) {
+                showToast('Debrief created.', true);
+                if (res.debrief && res.debrief.planned) applyPlannedDebriefForEvent(id, res.debrief);
+                runScan({ quiet: true });
+              } else {
+                btn.disabled = false; btn.textContent = prevText;
+                showToast((res && res.error) || 'Could not schedule.', false, res && res.authUrl);
+              }
+            })
+            .withFailureHandler(function(err) {
+              btn.classList.remove('btn-busy'); btn.disabled = false; btn.textContent = prevText;
+              showToast(String(err && err.message ? err.message : err), false);
+            })
+            .apiScheduleDebrief(id, endIso, override);
+        };
+      }
+
+      var lastScanSummary = '';
+      function runScan(options) {
+        options = options || {};
+        var quiet = !!options.quiet;
+        var btnScan = document.getElementById('btnScan');
+        var sd = parseInt(document.getElementById('scanDays').value, 10);
+        var sumEl = document.getElementById('summary');
+        if (!quiet && !options.skipUiReset) { clearToast(); btnScan.disabled = true; sumEl.textContent = 'Scanning…'; document.getElementById('card-list').innerHTML = ''; }
+        else { sumEl.textContent = 'Updating list after debrief…'; }
+        var t = setTimeout(function() {
+          if (!quiet && btnScan.disabled) { btnScan.disabled = false; sumEl.textContent = 'Timed out — try fewer days or reload.'; showToast('Scan took too long.', false); }
+          else if (quiet) { sumEl.textContent = lastScanSummary || 'Refresh timed out — click Scan calendar to reload.'; showToast('List refresh is taking a long time.', false); }
+        }, SCAN_TIMEOUT_MS);
+        google.script.run
+          .withSuccessHandler(function(res) {
+            clearTimeout(t);
+            if (!quiet) btnScan.disabled = false;
+            if (!res || !res.ok) {
+              if (!quiet) { sumEl.textContent = ''; renderCards([]); showToast((res && res.error) || 'Scan failed.', false, res && res.authUrl); }
+              else showToast((res && res.error) || 'Could not refresh list.', false, res && res.authUrl);
+              return;
+            }
+            var n = (res.events && res.events.length) || 0;
+            var parts = [n + ' meeting(s).'];
+            if (res.timedOut) parts.push('List may be incomplete (time limit).');
+            lastScanSummary = parts.join(' ');
+            sumEl.textContent = lastScanSummary;
+            renderCards(res.events || []);
+          })
+          .withFailureHandler(function(err) {
+            clearTimeout(t);
+            if (!quiet) { btnScan.disabled = false; sumEl.textContent = ''; }
+            else sumEl.textContent = lastScanSummary || '';
+            showToast(String(err && err.message ? err.message : err), false);
+          })
+          .apiScanCalendar(sd);
+      }
+
+      if (INITIAL.isDev) {
+        var vl = document.getElementById('versionLabel');
+        vl.textContent += ' · DEV';
+        vl.style.color = 'var(--warn)';
+      }
+
+      document.getElementById('scanDays').value = INITIAL.scanDays || 14;
+      document.getElementById('btnScan').onclick = function() {
+        var btnScan = document.getElementById('btnScan');
+        var sumEl = document.getElementById('summary');
+        clearToast();
+        btnScan.disabled = true;
+        sumEl.textContent = 'Scanning…';
+        document.getElementById('card-list').innerHTML = '';
+        google.script.run
+          .withSuccessHandler(function() { runScan({ skipUiReset: true }); })
+          .withFailureHandler(function(err) {
+            btnScan.disabled = false; sumEl.textContent = '';
+            showToast(String(err && err.message ? err.message : err), false);
+          })
+          .apiPing();
+      };
+
+      function updateFocusTitleHint() {
+        var title = (settingsCache && settingsCache.focusTimeTitle) ||
+                    (INITIAL.focusConfig && INITIAL.focusConfig.focusTitle) ||
+                    'Focus time';
+        var el = document.getElementById('focusTitleHint');
+        el.innerHTML = 'Scanning for focus blocks titled <code>' + escapeHtml(title) + '</code> — ' +
+          '<a id="focusTitleSettingsLink">change in Settings</a>';
+        document.getElementById('focusTitleSettingsLink').onclick = function() {
+          document.querySelector('.tab-btn[data-tab="settings"]').click();
+        };
+      }
+
+      // ── Settings ─────────────────────────────────────────────────────────────
+
+      function getActiveFocusConfig() {
+        if (settingsCache) {
+          return { targetMinutes: settingsCache.focusTargetMinutes || 180, blockMinutes: settingsCache.focusBlockMinutes || 90 };
+        }
+        return INITIAL.focusConfig || {};
+      }
+
+      function showSettingsLoadError(msg) {
+        var el = document.getElementById('settingsLoadError');
+        el.textContent = msg; el.style.display = '';
+      }
+
+      function loadSettings() {
+        if (settingsCache) { populateSettingsForm(settingsCache); return; }
+        document.getElementById('btnSaveSettings').disabled = true;
+        google.script.run
+          .withSuccessHandler(function(res) {
+            document.getElementById('btnSaveSettings').disabled = false;
+            if (res && res.ok) { settingsCache = res.settings; populateSettingsForm(settingsCache); }
+            else showSettingsLoadError((res && res.error) || 'Could not load settings.');
+          })
+          .withFailureHandler(function(err) {
+            document.getElementById('btnSaveSettings').disabled = false;
+            showSettingsLoadError(String(err && err.message ? err.message : err));
+          })
+          .apiGetSettings();
+      }
+
+      function populateSettingsForm(s) {
+        document.getElementById('sInternalDomain').value = s.internalDomain      || '';
+        document.getElementById('sScanDays').value       = s.scanDays            || 14;
+        document.getElementById('sFocusTarget').value    = s.focusTargetMinutes  || 180;
+        document.getElementById('sFocusBlock').value     = s.focusBlockMinutes   || 90;
+        document.getElementById('sFocusMin').value       = s.focusMinBlockMinutes || 30;
+        document.getElementById('sWorkStart').value      = s.workingHoursStart   || '09:00';
+        document.getElementById('sWorkEnd').value        = s.workingHoursEnd     || '18:00';
+        document.getElementById('sFocusTitle').value     = s.focusTimeTitle      || 'Focus time';
+      }
+
+      function setFieldError(inputId, errId, msg) {
+        var input = document.getElementById(inputId);
+        var err   = document.getElementById(errId);
+        if (msg) { input.classList.add('field-error'); err.textContent = msg; }
+        else      { input.classList.remove('field-error'); err.textContent = ''; }
+      }
+
+      function validateSettings() {
+        var ok = true;
+        var domain = document.getElementById('sInternalDomain').value.trim();
+        if (domain && !/^[a-z0-9.-]+\.[a-z]{2,}$/i.test(domain)) {
+          setFieldError('sInternalDomain', 'err-sInternalDomain', 'Enter a valid domain like "example.com", or leave blank.'); ok = false;
+        } else { setFieldError('sInternalDomain', 'err-sInternalDomain', ''); }
+
+        var scanDays = parseInt(document.getElementById('sScanDays').value, 10);
+        if (!scanDays || scanDays < 1 || scanDays > 90) {
+          setFieldError('sScanDays', 'err-sScanDays', 'Must be between 1 and 90.'); ok = false;
+        } else { setFieldError('sScanDays', 'err-sScanDays', ''); }
+
+        var focusTarget = parseInt(document.getElementById('sFocusTarget').value, 10);
+        if (!focusTarget || focusTarget <= 0) {
+          setFieldError('sFocusTarget', 'err-sFocusTarget', 'Must be greater than 0.'); ok = false;
+        } else { setFieldError('sFocusTarget', 'err-sFocusTarget', ''); }
+
+        var focusMin = parseInt(document.getElementById('sFocusMin').value, 10);
+        if (!focusMin || focusMin < 15) {
+          setFieldError('sFocusMin', 'err-sFocusMin', 'Must be at least 15 minutes.'); ok = false;
+        } else { setFieldError('sFocusMin', 'err-sFocusMin', ''); }
+
+        var focusBlock = parseInt(document.getElementById('sFocusBlock').value, 10);
+        var minVal = (focusMin >= 15) ? focusMin : 15;
+        if (!focusBlock || focusBlock < minVal) {
+          setFieldError('sFocusBlock', 'err-sFocusBlock', 'Must be at least ' + minVal + ' min (the minimum block size).'); ok = false;
+        } else { setFieldError('sFocusBlock', 'err-sFocusBlock', ''); }
+
+        var hhmmRe = /^\d{2}:\d{2}$/;
+        var workStart = document.getElementById('sWorkStart').value.trim();
+        var workEnd   = document.getElementById('sWorkEnd').value.trim();
+        if (!hhmmRe.test(workStart)) {
+          setFieldError('sWorkStart', 'err-sWorkStart', 'Use HH:MM format, e.g. "09:00".'); ok = false;
+        } else { setFieldError('sWorkStart', 'err-sWorkStart', ''); }
+
+        if (!hhmmRe.test(workEnd)) {
+          setFieldError('sWorkEnd', 'err-sWorkEnd', 'Use HH:MM format, e.g. "18:00".'); ok = false;
+        } else if (hhmmRe.test(workStart) && workEnd <= workStart) {
+          setFieldError('sWorkEnd', 'err-sWorkEnd', 'End time must be after start time.'); ok = false;
+        } else { setFieldError('sWorkEnd', 'err-sWorkEnd', ''); }
+
+        var focusTitle = document.getElementById('sFocusTitle').value.trim();
+        if (!focusTitle) {
+          setFieldError('sFocusTitle', 'err-sFocusTitle', 'Title cannot be empty.'); ok = false;
+        } else if (focusTitle.length > 100) {
+          setFieldError('sFocusTitle', 'err-sFocusTitle', 'Must be 100 characters or fewer.'); ok = false;
+        } else { setFieldError('sFocusTitle', 'err-sFocusTitle', ''); }
+
+        return ok;
+      }
+
+      document.getElementById('btnSaveSettings').addEventListener('click', function() {
+        if (!validateSettings()) return;
+        var btn   = document.getElementById('btnSaveSettings');
+        var errEl = document.getElementById('settingsSaveError');
+        errEl.style.display = 'none';
+        btn.disabled = true; btn.textContent = 'Saving…';
+        var payload = {
+          internalDomain:       document.getElementById('sInternalDomain').value.trim(),
+          scanDays:             parseInt(document.getElementById('sScanDays').value, 10),
+          focusTargetMinutes:   parseInt(document.getElementById('sFocusTarget').value, 10),
+          focusMinBlockMinutes: parseInt(document.getElementById('sFocusMin').value, 10),
+          focusBlockMinutes:    parseInt(document.getElementById('sFocusBlock').value, 10),
+          workingHoursStart:    document.getElementById('sWorkStart').value.trim(),
+          workingHoursEnd:      document.getElementById('sWorkEnd').value.trim(),
+          focusTimeTitle:       document.getElementById('sFocusTitle').value.trim(),
+        };
+        google.script.run
+          .withSuccessHandler(function(res) {
+            btn.disabled = false; btn.textContent = 'Save settings';
+            if (res && res.ok) {
+              settingsCache = payload;
+              settingsDirtyFlag = true;
+              updateFocusTitleHint();
+              var st = document.getElementById('settingsToast');
+              st.className = 'toast show ok'; st.textContent = 'Settings saved.';
+              setTimeout(function() { st.className = 'toast'; st.textContent = ''; }, 3000);
+            } else {
+              errEl.textContent = (res && res.error) || 'Could not save settings.'; errEl.style.display = '';
+            }
+          })
+          .withFailureHandler(function(err) {
+            btn.disabled = false; btn.textContent = 'Save settings';
+            errEl.textContent = String(err && err.message ? err.message : err); errEl.style.display = '';
+          })
+          .apiSaveSettings(payload);
+      });
+
+      // ── Focus Time ───────────────────────────────────────────────────────────
+
+      var currentFocusDays   = [];
+      var focusCurrentWeek   = null; // Date (local Monday)
+      var focusBaseWeek      = null; // The "real current week" Monday
+      var focusScanPending   = false;
+
+      function getMondayOfWeek(date) {
+        var day  = date.getDay();
+        var diff = (day === 0) ? -6 : 1 - day;
+        return new Date(date.getFullYear(), date.getMonth(), date.getDate() + diff);
+      }
+      function addDays(d, n) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
+      function toISODate(d)  {
+        return d.getFullYear() + '-' +
+          String(d.getMonth() + 1).padStart(2, '0') + '-' +
+          String(d.getDate()).padStart(2, '0');
+      }
+      function isCurrentWeek() { return toISODate(focusCurrentWeek) === toISODate(focusBaseWeek); }
+      function formatMins(m) {
+        if (m <= 0) return '0min';
+        var h = Math.floor(m / 60), rem = m % 60;
+        return h > 0 && rem > 0 ? h + 'h ' + rem + 'min' : h > 0 ? h + 'h' : rem + 'min';
+      }
+      function formatWeekLabel(monday) {
+        var fri    = addDays(monday, 4);
+        var monStr = monday.toLocaleDateString(undefined, { day:'numeric', month:'short' });
+        var friStr = fri.toLocaleDateString(undefined, { day:'numeric', month:'short', year:'numeric' });
+        return monStr + ' – ' + friStr;
+      }
+      function formatBlockTime(block) {
+        var s = new Date(block.startIso), e = new Date(block.endIso);
+        var fmt = { hour:'2-digit', minute:'2-digit', hour12: false };
+        return s.toLocaleTimeString(undefined, fmt) + '–' + e.toLocaleTimeString(undefined, fmt);
+      }
+      function blockDurMins(block) {
+        return Math.round((new Date(block.endIso) - new Date(block.startIso)) / 60000);
+      }
+      function formatFocusDate(isoDate) {
+        return new Date(isoDate + 'T00:00:00').toLocaleDateString(undefined, { weekday:'short', day:'numeric', month:'short' });
+      }
+
+      function showFocusToast(msg, ok, authUrl) {
+        var el = document.getElementById('focusToast');
+        el.className = 'toast show ' + (ok ? 'ok' : 'err');
+        el.innerHTML = '';
+        var p = document.createElement('div'); p.textContent = msg || ''; el.appendChild(p);
+        if (authUrl) {
+          el.appendChild(document.createElement('br'));
+          var a = document.createElement('a');
+          a.href = authUrl; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.textContent = 'Authorize';
+          el.appendChild(a);
+        }
+      }
+      function clearFocusToast() { var el = document.getElementById('focusToast'); el.className = 'toast'; el.innerHTML = ''; }
+
+      function updateFocusNav() {
+        document.getElementById('weekLabel').textContent = formatWeekLabel(focusCurrentWeek);
+        document.getElementById('btnFocusPrev').disabled = isCurrentWeek();
+      }
+
+      function setFocusNavBusy(busy) {
+        document.getElementById('btnFocusPrev').disabled = busy || isCurrentWeek();
+        document.getElementById('btnFocusNext').disabled = busy;
+      }
+
+      function updateWeekMeta() {
+        var cfg  = getActiveFocusConfig();
+        var meta = document.getElementById('focusMeta');
+        var weekActual = 0, weekTarget = 0;
+        currentFocusDays.forEach(function(d) {
+          if (!d.skipped && !d.error) {
+            weekActual += d.effectiveFocusMinutes || 0;
+            weekTarget += d.targetMinutes || cfg.targetMinutes || 180;
+          }
+        });
+        var dayTarget = formatMins(cfg.targetMinutes || 180);
+        var targetLine = 'Target <span>' + dayTarget + '/day</span>';
+        if (weekTarget) targetLine += ' – <span>' + formatMins(weekTarget) + '/week</span>';
+        if (!weekTarget) { meta.innerHTML = targetLine; return; }
+        var pct = weekActual / weekTarget;
+        var col = pct >= 1 ? 'var(--ok)' : pct >= 0.5 ? 'var(--warn)' : 'var(--danger)';
+        meta.innerHTML = targetLine +
+          ' &nbsp;·&nbsp; Actual this week: ' +
+          '<span style="color:' + col + ';font-weight:600">' + formatMins(weekActual) + '</span>';
+      }
+
+      function runFocusScan() {
+        if (focusScanPending) return;
+        focusScanPending = true;
+        clearFocusToast();
+        setFocusNavBusy(true);
+        var grid = document.getElementById('weekGrid');
+        grid.innerHTML = '<div class="focus-loading">Scanning calendar…</div>';
+
+        var weekStartIso = toISODate(focusCurrentWeek);
+        google.script.run
+          .withSuccessHandler(function(res) {
+            focusScanPending = false;
+            setFocusNavBusy(false);
+            if (!res || !res.ok) {
+              grid.innerHTML = '';
+              showFocusToast((res && res.error) || 'Scan failed.', false, res && res.authUrl);
+              return;
+            }
+            currentFocusDays = res.days || [];
+            updateWeekMeta();
+            renderFocusWeek(currentFocusDays);
+          })
+          .withFailureHandler(function(err) {
+            focusScanPending = false;
+            setFocusNavBusy(false);
+            grid.innerHTML = '';
+            showFocusToast(String(err && err.message ? err.message : err), false);
+          })
+          .apiFocusScan(weekStartIso);
+      }
+
+      function renderFocusWeek(days) {
+        var grid    = document.getElementById('weekGrid');
+        var todayIso = toISODate(new Date());
+        grid.innerHTML = '';
+        days.forEach(function(day) {
+          grid.appendChild(buildDayCol(day, todayIso));
+        });
+        grid.onclick = function(e) {
+          var btn = e.target.closest('button.focus-btn-primary[data-date]');
+          if (!btn || btn.disabled) return;
+          scheduleFocusDay(btn.getAttribute('data-date'), btn);
+        };
+      }
+
+      function buildDayCol(day, todayIso) {
+        var col = document.createElement('div');
+        col.className = 'day-col';
+        col.setAttribute('data-date', day.date);
+        var isToday = (day.date === todayIso);
+        if (day.past)    col.classList.add('past');
+        if (isToday)     col.classList.add('today');
+        if (day.skipped) col.classList.add('ooo');
+
+        var dateObj  = new Date(day.date + 'T00:00:00');
+        var dayName  = dateObj.toLocaleDateString(undefined, { weekday:'short' });
+        var dayNum   = dateObj.getDate();
+        var monthStr = dateObj.toLocaleDateString(undefined, { month:'short', year:'numeric' });
+
+        var badgeHtml = isToday
+          ? '<span class="day-badge badge-today">Today</span>'
+          : day.skipped ? '<span class="day-badge badge-ooo">OoO</span>'
+          : day.past    ? '<span class="day-badge badge-past">Past</span>'
+          : '';
+
+        var html = '<div class="day-header">' +
+          '<div><div class="day-name">' + escapeHtml(dayName) + '</div>' +
+          '<div class="day-num">' + dayNum + '</div>' +
+          '<div class="day-month">' + escapeHtml(monthStr) + '</div></div>' +
+          badgeHtml + '</div>' +
+          '<div class="day-divider"></div>';
+
+        if (day.skipped) {
+          html += '<div class="ooo-content">' +
+            '<div class="ooo-icon">🏖</div>' +
+            '<div class="ooo-text">Out of office</div>' +
+            '<div class="ooo-sub">No focus blocks scheduled</div>' +
+            '</div>';
+          col.innerHTML = html; return col;
+        }
+
+        if (day.error) {
+          html += '<div class="day-error">' + escapeHtml(day.error) + '</div>';
+          col.innerHTML = html; return col;
+        }
+
+        // Focus stat
+        var target = day.targetMinutes || 180;
+        var pct    = Math.min(100, Math.round((day.effectiveFocusMinutes / target) * 100));
+        var fill   = pct >= 100 ? 'fill-ok' : pct >= 50 ? 'fill-partial' : 'fill-low';
+        html += '<div>' +
+          '<div class="focus-stat-label">Focus time</div>' +
+          '<div class="focus-stat-value">' + formatMins(day.effectiveFocusMinutes) + '</div>' +
+          '<div class="focus-bar-track"><div class="focus-bar-fill ' + fill + '" style="width:' + pct + '%"></div></div>' +
+          '</div>';
+
+        // Gap
+        if (day.gapMinutes <= 0) {
+          html += '<div class="gap-row gap-met"><div class="gap-dot dot-ok"></div>Target met ✓</div>';
+        } else {
+          html += '<div class="gap-row gap-short"><div class="gap-dot dot-short"></div>−' + formatMins(day.gapMinutes) + ' to target</div>';
+        }
+
+        // Conflicts
+        if (day.conflicts && day.conflicts.length) {
+          html += '<div class="conflict-list">';
+          day.conflicts.forEach(function(c) {
+            html += '<div class="conflict-item"><strong>‘' + escapeHtml(c.meetingTitle) + '’</strong>eats ' +
+              formatMins(c.overlapMinutes) + ' of focus block</div>';
+          });
+          html += '</div>';
+        }
+
+        // Proposals (non-past only)
+        if (!day.past && day.proposals && day.proposals.length) {
+          html += '<div class="proposals"><div class="proposals-label">Proposals</div>';
+          day.proposals.forEach(function(p) {
+            if (p.type === 'split') {
+              if (p.originalBlock) {
+                html += '<div class="proposal-item"><span class="proposal-pill pill-delete">delete</span>' +
+                  '<span class="proposal-orig">' + escapeHtml(formatBlockTime(p.originalBlock)) + '</span></div>';
+              }
+              p.blocks.forEach(function(b) {
+                html += '<div class="proposal-item"><span class="proposal-pill pill-split">split</span>' +
+                  '<span class="proposal-time">' + escapeHtml(formatBlockTime(b)) + '</span>' +
+                  '<span class="proposal-dur">' + formatMins(blockDurMins(b)) + '</span></div>';
+              });
+            } else {
+              p.blocks.forEach(function(b) {
+                html += '<div class="proposal-item"><span class="proposal-pill pill-new">new</span>' +
+                  '<span class="proposal-time">' + escapeHtml(formatBlockTime(b)) + '</span>' +
+                  '<span class="proposal-dur">' + formatMins(blockDurMins(b)) + '</span></div>';
+              });
+            }
+          });
+          html += '</div>';
+        } else if (!day.past) {
+          html += '<div style="flex:1"></div>';
+        }
+
+        // Action button
+        if (!day.past && !day.skipped) {
+          html += '<div class="action-area">';
+          if (day.proposals && day.proposals.length > 0) {
+            html += '<button class="focus-btn focus-btn-primary" data-date="' + escapeHtml(day.date) + '">Schedule</button>';
+          } else {
+            html += '<button class="focus-btn focus-btn-nothing" disabled>Nothing to do</button>';
+          }
+          html += '</div>';
+        }
+
+        col.innerHTML = html;
+        return col;
+      }
+
+      function scheduleFocusDay(dateIso, btn) {
+        var day = null;
+        for (var i = 0; i < currentFocusDays.length; i++) {
+          if (currentFocusDays[i].date === dateIso) { day = currentFocusDays[i]; break; }
+        }
+        if (!day || !day.proposals || !day.proposals.length) return;
+
+        btn.disabled = true;
+        btn.textContent = 'Scheduling…';
+        btn.classList.add('btn-busy');
+
+        google.script.run
+          .withSuccessHandler(function(res) {
+            btn.classList.remove('btn-busy');
+            if (res && res.ok) {
+              showFocusToast('Focus blocks scheduled for ' + formatFocusDate(dateIso) + '.', true);
+              refreshFocusDay(dateIso);
+            } else {
+              btn.disabled    = false;
+              btn.textContent = 'Schedule';
+              showFocusToast((res && res.error) || 'Could not schedule.', false, res && res.authUrl);
+            }
+          })
+          .withFailureHandler(function(err) {
+            btn.classList.remove('btn-busy');
+            btn.disabled    = false;
+            btn.textContent = 'Schedule';
+            showFocusToast(String(err && err.message ? err.message : err), false);
+          })
+          .apiFocusScheduleDay(dateIso, day.proposals);
+      }
+
+      function refreshFocusDay(dateIso) {
+        var todayIso = toISODate(new Date());
+        var col = document.querySelector('.day-col[data-date="' + dateIso + '"]');
+        if (col) {
+          col.innerHTML = '<div class="focus-loading" style="padding:20px 0;text-align:center;font-size:0.8rem;">Refreshing…</div>';
+        }
+        google.script.run
+          .withSuccessHandler(function(res) {
+            if (res && res.ok && res.day) {
+              for (var i = 0; i < currentFocusDays.length; i++) {
+                if (currentFocusDays[i].date === dateIso) { currentFocusDays[i] = res.day; break; }
+              }
+              updateWeekMeta();
+              var newCol = buildDayCol(res.day, todayIso);
+              var oldCol = document.querySelector('.day-col[data-date="' + dateIso + '"]');
+              if (oldCol) oldCol.parentNode.replaceChild(newCol, oldCol);
+            }
+          })
+          .withFailureHandler(function() { /* leave toast already shown */ })
+          .apiFocusScanDay(dateIso);
+      }
+
+      // ── Tab switching ────────────────────────────────────────────────────────
+      document.querySelectorAll('.tab-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var prevTab = (document.querySelector('.tab-btn.active') || {}).getAttribute('data-tab');
+          var tabId   = this.getAttribute('data-tab');
+          document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+          document.querySelectorAll('.tab-pane').forEach(function(p) { p.style.display = 'none'; });
+          this.classList.add('active');
+          document.getElementById('tab-' + tabId).style.display = '';
+
+          if (tabId === 'settings') loadSettings();
+
+          if (prevTab === 'settings' && settingsDirtyFlag) {
+            settingsDirtyFlag = false;
+            if (tabId === 'focus') {
+              runFocusScan();
+            } else if (tabId === 'debriefs') {
+              if (settingsCache) document.getElementById('scanDays').value = settingsCache.scanDays || 14;
+              runScan();
+            }
+          }
+        });
+      });
+
+      // ── Focus week navigation ────────────────────────────────────────────────
+      // On weekends, jump straight to next week — current week is over.
+      focusBaseWeek = getMondayOfWeek(new Date());
+      var todayDow = new Date().getDay(); // 0=Sun, 6=Sat
+      if (todayDow === 0 || todayDow === 6) {
+        focusBaseWeek = addDays(focusBaseWeek, 7);
+      }
+      focusCurrentWeek = focusBaseWeek;
+      updateFocusNav();
+
+      updateFocusTitleHint();
+
+      // Focus Time is the default tab — scan immediately on load.
+      google.script.run
+        .withSuccessHandler(function() { runFocusScan(); })
+        .withFailureHandler(function() { runFocusScan(); })
+        .apiPing();
+
+      document.getElementById('btnFocusRefresh').addEventListener('click', function() {
+        runFocusScan();
+      });
+
+      document.getElementById('btnFocusPrev').addEventListener('click', function() {
+        if (isCurrentWeek()) return;
+        focusCurrentWeek = addDays(focusCurrentWeek, -7);
+        updateFocusNav();
+        runFocusScan();
+      });
+      document.getElementById('btnFocusNext').addEventListener('click', function() {
+        focusCurrentWeek = addDays(focusCurrentWeek, 7);
+        updateFocusNav();
+        runFocusScan();
+      });
+    </script>
+  </body>
+</html>

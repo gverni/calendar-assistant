@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Debriefs — card mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:     #0f1419;
+      --panel:  #1a2332;
+      --panel2: #1f2c3d;
+      --text:   #e7ecf3;
+      --muted:  #8b98a5;
+      --accent: #3d8bfd;
+      --border: #2d3a4d;
+      --ok:     #3ecf8e;
+      --warn:   #f6ad55;
+      --danger: #f56565;
+      --radius: 10px;
+      --font:   ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      --mono:   'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .wrap {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 28px 24px 64px;
+    }
+
+    /* ── app header ── */
+    .app-title {
+      font-size: 1.5rem; font-weight: 700;
+      letter-spacing: -0.02em; margin-bottom: 20px;
+    }
+    .app-title-accent { color: var(--accent); }
+
+    /* ── tabs ── */
+    .tab-bar {
+      display: flex; gap: 4px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+    .tab-btn {
+      padding: 9px 20px 10px;
+      font-family: var(--font); font-size: 0.85rem; font-weight: 600;
+      color: var(--muted); background: none; border: none;
+      border-bottom: 2px solid transparent; margin-bottom: -1px; cursor: pointer;
+    }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    /* ── scan controls ── */
+    .scan-bar {
+      display: flex; flex-wrap: wrap; gap: 12px;
+      align-items: flex-end; margin-bottom: 12px;
+    }
+    .scan-bar label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 4px; }
+    .scan-bar input[type=number] {
+      width: 90px; padding: 8px 10px;
+      border-radius: 8px; border: 1px solid var(--border);
+      background: var(--bg); color: var(--text);
+      font-family: var(--font); font-size: 0.9rem;
+    }
+    .btn-primary {
+      padding: 10px 18px; border-radius: 8px; border: none;
+      background: var(--accent); color: #fff;
+      font-family: var(--font); font-size: 0.9rem; font-weight: 600;
+      cursor: pointer;
+    }
+    .summary { font-size: 0.82rem; color: var(--muted); margin-bottom: 20px; }
+
+    /* ── card list ── */
+    .card-list {
+      display: flex; flex-direction: column; gap: 10px;
+    }
+
+    /* ── meeting card ── */
+    .meeting-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      display: grid;
+      grid-template-columns: 9rem 1fr auto;
+      gap: 0;
+      overflow: hidden;
+      transition: border-color 0.15s;
+      animation: fadeUp 0.25s ease both;
+    }
+    .meeting-card:hover { border-color: color-mix(in srgb, var(--border) 60%, var(--accent)); }
+    .meeting-card:nth-child(1) { animation-delay: 0.04s; }
+    .meeting-card:nth-child(2) { animation-delay: 0.08s; }
+    .meeting-card:nth-child(3) { animation-delay: 0.12s; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* left: time */
+    .card-time {
+      padding: 16px 14px;
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; gap: 2px;
+      background: color-mix(in srgb, var(--panel) 60%, var(--bg));
+      min-width: 0;
+    }
+    .time-weekday {
+      font-size: 0.68rem; font-weight: 700;
+      letter-spacing: 0.07em; text-transform: uppercase;
+      color: var(--muted);
+    }
+    .time-date {
+      font-size: 0.9rem; font-weight: 700;
+      color: var(--text); line-height: 1.2;
+    }
+    .time-hours {
+      margin-top: 6px;
+      display: flex; flex-direction: column; gap: 1px;
+    }
+    .time-val {
+      font-family: var(--mono); font-size: 0.8rem;
+      color: var(--text); font-weight: 500;
+    }
+    .time-allday {
+      font-family: var(--mono); font-size: 0.75rem;
+      color: var(--muted); margin-top: 6px;
+    }
+    .time-through {
+      font-size: 0.68rem; color: var(--muted); margin-top: 2px;
+    }
+
+    /* centre: meeting details */
+    .card-body {
+      padding: 14px 18px;
+      display: flex; flex-direction: column; gap: 7px;
+      min-width: 0;
+    }
+    .card-title-row {
+      display: flex; flex-wrap: wrap; align-items: baseline; gap: 7px;
+    }
+    .card-title {
+      font-size: 0.95rem; font-weight: 700;
+      line-height: 1.3; color: var(--text);
+    }
+
+    /* badges */
+    .badge {
+      display: inline-flex; align-items: center;
+      padding: 2px 8px; border-radius: 5px;
+      font-size: 0.72rem; font-weight: 600;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .badge-ok      { background: rgba(62,207,142,0.15);  color: var(--ok); }
+    .badge-warn    { background: rgba(246,173,85,0.15);   color: var(--warn); }
+    .badge-bad     { background: rgba(245,101,101,0.12);  color: #ffb4b4; }
+    .badge-external {
+      background: rgba(61,139,253,0.18); color: #a8d0ff;
+      font-size: 0.65rem; letter-spacing: 0.06em; text-transform: uppercase;
+    }
+    .badge-response { letter-spacing: 0.03em; text-transform: uppercase; font-size: 0.67rem; }
+    .badge-rsp-accepted { background: rgba(62,207,142,0.18);  color: var(--ok); }
+    .badge-rsp-owner    { background: rgba(139,152,165,0.22);  color: #c5d0e0; }
+    .badge-rsp-declined { background: rgba(245,101,101,0.14);  color: #ffb4b4; }
+    .badge-rsp-maybe    { background: rgba(246,173,85,0.16);   color: var(--warn); }
+    .badge-rsp-invited  { background: rgba(139,152,165,0.12);  color: var(--muted); }
+    .badge-rsp-unknown  { background: rgba(139,152,165,0.1);   color: var(--muted); text-transform: none; }
+
+    /* attendees */
+    .card-attendees {
+      display: flex; flex-wrap: wrap; gap: 4px 10px;
+    }
+    .attendee {
+      font-size: 0.75rem; color: var(--muted);
+      display: flex; align-items: center; gap: 4px;
+    }
+    .attendee::before {
+      content: '';
+      width: 3px; height: 3px; border-radius: 50%;
+      background: var(--border); flex-shrink: 0;
+    }
+
+    /* right: debrief + action */
+    .card-action {
+      padding: 14px 16px;
+      border-left: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      align-items: flex-end; justify-content: center;
+      gap: 8px;
+      min-width: 160px;
+      background: color-mix(in srgb, var(--panel) 60%, var(--bg));
+    }
+    .debrief-label {
+      font-size: 0.65rem; font-weight: 600;
+      letter-spacing: 0.07em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 2px; text-align: right;
+    }
+    .debrief-detail {
+      font-size: 0.72rem; color: var(--muted);
+      text-align: right; line-height: 1.35;
+      max-width: 160px;
+    }
+    .conflict-detail {
+      font-size: 0.72rem; color: var(--muted);
+      text-align: right; line-height: 1.35;
+      max-width: 160px;
+    }
+    .btn-ok {
+      padding: 7px 14px; border-radius: 8px; border: none;
+      background: rgba(62,207,142,0.22); color: var(--ok);
+      font-family: var(--font); font-size: 0.8rem; font-weight: 600;
+      cursor: pointer; white-space: nowrap;
+      transition: background 0.15s;
+    }
+    .btn-ok:hover { background: rgba(62,207,142,0.32); }
+    .btn-override {
+      padding: 7px 14px; border-radius: 8px;
+      background: rgba(245,158,11,0.12); color: #fbbf24;
+      border: 1px solid rgba(245,158,11,0.32);
+      font-family: var(--font); font-size: 0.8rem; font-weight: 600;
+      cursor: pointer; white-space: nowrap;
+      transition: background 0.15s;
+    }
+    .btn-override:hover { background: rgba(245,158,11,0.22); }
+    .muted-dash { color: var(--muted); font-size: 1.1rem; }
+
+    @media (max-width: 680px) {
+      .meeting-card { grid-template-columns: 1fr; }
+      .card-time    { border-right: none; border-bottom: 1px solid var(--border); flex-direction: row; gap: 16px; align-items: center; }
+      .card-action  { border-left: none; border-top: 1px solid var(--border); flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+
+    <h1 class="app-title">Calendar <span class="app-title-accent">Assistant</span></h1>
+
+    <div class="tab-bar">
+      <button class="tab-btn">Focus Time</button>
+      <button class="tab-btn active">Debriefs</button>
+    </div>
+
+    <!-- scan controls -->
+    <div class="scan-bar">
+      <div>
+        <label for="scanDays">Days ahead to scan</label>
+        <input type="number" id="scanDays" value="2" min="1" max="90" />
+      </div>
+      <button class="btn-primary">Scan calendar</button>
+    </div>
+    <div class="summary">3 meeting(s).</div>
+
+    <!-- cards -->
+    <div class="card-list">
+
+      <!-- card 1: all-day, awaiting response, N/A -->
+      <div class="meeting-card">
+        <div class="card-time">
+          <div class="time-weekday">Mon</div>
+          <div class="time-date">15 Jun 2026</div>
+          <div class="time-allday">All day</div>
+          <div class="time-through">Through Sat, 20 Jun</div>
+        </div>
+        <div class="card-body">
+          <div class="card-title-row">
+            <span class="card-title">Certinia 101 Product Foundations (Self-Guided)</span>
+            <span class="badge badge-response badge-rsp-invited">Awaiting response</span>
+          </div>
+          <div class="card-attendees">
+            <span class="attendee">gverni@example.com</span>
+          </div>
+        </div>
+        <div class="card-action">
+          <div class="debrief-label">Debrief</div>
+          <span class="badge badge-warn">N/A</span>
+          <div class="debrief-detail">All-day event</div>
+        </div>
+      </div>
+
+      <!-- card 2: accepted, conflict, schedule anyway -->
+      <div class="meeting-card">
+        <div class="card-time">
+          <div class="time-weekday">Mon</div>
+          <div class="time-date">15 Jun 2026</div>
+          <div class="time-hours">
+            <span class="time-val">09:00</span>
+            <span class="time-val">09:30</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="card-title-row">
+            <span class="card-title">Giuseppe / Omar - Weekly</span>
+            <span class="badge badge-response badge-rsp-accepted">Accepted</span>
+          </div>
+          <div class="card-attendees">
+            <span class="attendee">gverni@example.com</span>
+          </div>
+        </div>
+        <div class="card-action">
+          <div class="debrief-label">Debrief</div>
+          <span class="badge badge-warn">Not planned</span>
+          <span class="badge badge-bad">Conflict</span>
+          <div class="conflict-detail">Slot blocked by: Focus time</div>
+          <button class="btn-override">Schedule anyway</button>
+        </div>
+      </div>
+
+      <!-- card 3: organizer, external, schedule debrief -->
+      <div class="meeting-card">
+        <div class="card-time">
+          <div class="time-weekday">Mon</div>
+          <div class="time-date">15 Jun 2026</div>
+          <div class="time-hours">
+            <span class="time-val">10:00</span>
+            <span class="time-val">10:30</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="card-title-row">
+            <span class="card-title">FW: TTP Weekly Project Status Call</span>
+            <span class="badge badge-external">External</span>
+            <span class="badge badge-response badge-rsp-owner">Organizer</span>
+          </div>
+          <div class="card-attendees">
+            <span class="attendee">andy.beamish@hsbc.com</span>
+            <span class="attendee">sianmarsh@hsbc.com</span>
+            <span class="attendee">emma.robson@hsbc.com</span>
+            <span class="attendee">rachelboyle@example.com</span>
+            <span class="attendee">mdeselincourt@example.com</span>
+            <span class="attendee">gverni@example.com</span>
+          </div>
+        </div>
+        <div class="card-action">
+          <div class="debrief-label">Debrief</div>
+          <span class="badge badge-warn">Not planned</span>
+          <button class="btn-ok">Schedule debrief</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>

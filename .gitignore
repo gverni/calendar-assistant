@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# Environment and secrets (never commit)
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# clasp: project config (contains scriptId — keep local) and OAuth token
+.clasp.json
+.clasprc.json
+
+# Local web-app deploy state from scripts/setup.mjs
+.webapp-deployment.json
+
+# Test / coverage (if you add tests later)
+coverage/
+.nyc_output/
+
+# Editor swap files
+*.swp
+*.swo
+*~

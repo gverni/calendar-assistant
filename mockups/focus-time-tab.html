@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Calendar Debrief — Focus Time mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Syne:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:      #0f1419;
+      --panel:   #1a2332;
+      --panel2:  #1f2c3d;
+      --text:    #e7ecf3;
+      --muted:   #8b98a5;
+      --accent:  #3d8bfd;
+      --border:  #2d3a4d;
+      --ok:      #3ecf8e;
+      --warn:    #f6ad55;
+      --danger:  #f56565;
+      --radius:  10px;
+      --mono:    'IBM Plex Mono', monospace;
+      --display: 'Syne', ui-sans-serif, system-ui, sans-serif;
+      --past-opacity: 0.45;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--display);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    /* ── page shell ── */
+    .wrap {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 28px 24px 64px;
+    }
+
+    /* ── header ── */
+    .app-header {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+    .app-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .app-subtitle {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    /* ── tabs ── */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 28px;
+    }
+    .tab {
+      padding: 9px 20px 10px;
+      font-family: var(--display);
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      color: var(--muted);
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      cursor: pointer;
+      transition: color 0.15s;
+    }
+    .tab:hover { color: var(--text); }
+    .tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    /* ── week nav ── */
+    .week-nav {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .week-nav-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--text);
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, color 0.15s;
+    }
+    .week-nav-btn:hover:not(:disabled) {
+      background: var(--panel2);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .week-nav-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+    .week-label {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: 0.01em;
+      min-width: 200px;
+      text-align: center;
+    }
+    .week-summary {
+      margin-left: auto;
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+    .week-summary span {
+      color: var(--ok);
+      font-weight: 500;
+    }
+
+    /* ── week grid ── */
+    .week-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+    }
+
+    /* ── day column ── */
+    .day-col {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 14px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 320px;
+      transition: border-color 0.15s;
+    }
+    .day-col.past {
+      opacity: var(--past-opacity);
+    }
+    .day-col.today {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 20%, transparent),
+                  0 4px 24px color-mix(in srgb, var(--accent) 8%, transparent);
+    }
+    .day-col.ooo {
+      background: color-mix(in srgb, var(--panel) 60%, var(--bg));
+    }
+
+    /* day header */
+    .day-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 6px;
+    }
+    .day-name {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .day-date {
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1;
+      margin-top: 2px;
+    }
+    .day-badge {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      font-weight: 500;
+      padding: 2px 7px;
+      border-radius: 4px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .badge-today  { background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); }
+    .badge-past   { background: color-mix(in srgb, var(--muted) 12%, transparent);  color: var(--muted);  border: 1px solid color-mix(in srgb, var(--muted) 25%, transparent); }
+    .badge-ooo    { background: color-mix(in srgb, var(--warn) 12%, transparent);   color: var(--warn);   border: 1px solid color-mix(in srgb, var(--warn) 30%, transparent); }
+
+    /* divider */
+    .day-divider {
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* focus stat */
+    .focus-stat {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .focus-stat-label {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .focus-stat-value {
+      font-family: var(--mono);
+      font-size: 1.1rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+    .focus-bar-track {
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 2px;
+    }
+    .focus-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.4s ease;
+    }
+    .fill-ok      { background: var(--ok); }
+    .fill-partial { background: var(--warn); }
+    .fill-low     { background: var(--danger); }
+
+    /* gap indicator */
+    .gap-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+    .gap-met   { color: var(--ok); }
+    .gap-short { color: var(--danger); }
+    .gap-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .dot-ok    { background: var(--ok); }
+    .dot-short { background: var(--danger); }
+
+    /* conflict */
+    .conflict-list {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .conflict-item {
+      background: color-mix(in srgb, var(--warn) 8%, transparent);
+      border: 1px solid color-mix(in srgb, var(--warn) 25%, transparent);
+      border-radius: 6px;
+      padding: 6px 9px;
+      font-size: 0.72rem;
+      color: var(--warn);
+      line-height: 1.35;
+    }
+    .conflict-item strong {
+      font-weight: 600;
+      display: block;
+    }
+
+    /* proposals */
+    .proposals {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      flex: 1;
+    }
+    .proposals-label {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+    .proposal-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.73rem;
+      color: var(--text);
+    }
+    .proposal-pill {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      padding: 2px 7px;
+      border-radius: 4px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .pill-new   { background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); }
+    .pill-split { background: color-mix(in srgb, var(--warn) 12%, transparent); color: var(--warn); border: 1px solid color-mix(in srgb, var(--warn) 28%, transparent); }
+    .pill-delete { background: color-mix(in srgb, var(--danger) 10%, transparent); color: var(--danger); border: 1px solid color-mix(in srgb, var(--danger) 25%, transparent); font-size: 0.63rem; }
+    .proposal-time {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--text);
+    }
+    .proposal-dur {
+      font-family: var(--mono);
+      font-size: 0.67rem;
+      color: var(--muted);
+    }
+
+    /* ooo content */
+    .ooo-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      color: var(--muted);
+    }
+    .ooo-icon { font-size: 1.6rem; opacity: 0.4; }
+    .ooo-text { font-size: 0.78rem; font-weight: 600; letter-spacing: 0.04em; }
+
+    /* nothing to do */
+    .nothing-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+    .nothing-icon { font-size: 1.4rem; }
+    .nothing-text { font-size: 0.73rem; color: var(--ok); font-weight: 600; }
+
+    /* action area */
+    .action-area {
+      margin-top: auto;
+    }
+
+    /* buttons */
+    .btn {
+      width: 100%;
+      padding: 9px 14px;
+      border-radius: 8px;
+      border: none;
+      font-family: var(--display);
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-primary:hover {
+      background: color-mix(in srgb, var(--accent) 85%, white);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 35%, transparent);
+    }
+    .btn-primary:active { transform: translateY(0); }
+
+    /* stagger animation */
+    .day-col {
+      animation: slideUp 0.3s ease both;
+    }
+    .day-col:nth-child(1) { animation-delay: 0.04s; }
+    .day-col:nth-child(2) { animation-delay: 0.08s; }
+    .day-col:nth-child(3) { animation-delay: 0.12s; }
+    .day-col:nth-child(4) { animation-delay: 0.16s; }
+    .day-col:nth-child(5) { animation-delay: 0.20s; }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .day-col.past { animation: slideUp 0.3s ease both; }
+
+    /* responsive */
+    @media (max-width: 860px) {
+      .week-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 560px) {
+      .week-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+
+    <!-- header -->
+    <div class="app-header">
+      <span class="app-title">Calendar debrief</span>
+      <span class="app-subtitle">giuseppe@example.com</span>
+    </div>
+
+    <!-- tabs -->
+    <div class="tabs">
+      <button class="tab">Debriefs</button>
+      <button class="tab active">Focus Time</button>
+    </div>
+
+    <!-- week nav -->
+    <div class="week-nav">
+      <button class="week-nav-btn" disabled title="Can't go before current week">&#9664;</button>
+      <span class="week-label">Mon 8 – Fri 12 Jun 2026</span>
+      <button class="week-nav-btn" title="Next week">&#9654;</button>
+      <span class="week-summary">
+        This week &nbsp;·&nbsp; target <span>3h / day</span> &nbsp;·&nbsp; blocks of <span>90 min</span>
+      </span>
+    </div>
+
+    <!-- week grid -->
+    <div class="week-grid">
+
+      <!-- MON 8 — past, target met -->
+      <div class="day-col past">
+        <div class="day-header">
+          <div>
+            <div class="day-name">Mon</div>
+            <div class="day-date">8</div>
+            <div style="font-size:0.72rem; color:var(--muted); margin-top:1px;">Jun 2026</div>
+          </div>
+          <span class="day-badge badge-past">Past</span>
+        </div>
+        <div class="day-divider"></div>
+        <div class="focus-stat">
+          <div class="focus-stat-label">Focus time</div>
+          <div class="focus-stat-value">3h 00min</div>
+          <div class="focus-bar-track"><div class="focus-bar-fill fill-ok" style="width:100%"></div></div>
+        </div>
+        <div class="gap-row gap-met">
+          <div class="gap-dot dot-ok"></div>
+          Target met ✓
+        </div>
+        <div class="nothing-content" style="flex:1">
+          <div class="nothing-icon">✦</div>
+          <div class="nothing-text">Full focus day</div>
+        </div>
+      </div>
+
+      <!-- TUE 9 — past, short -->
+      <div class="day-col past">
+        <div class="day-header">
+          <div>
+            <div class="day-name">Tue</div>
+            <div class="day-date">9</div>
+            <div style="font-size:0.72rem; color:var(--muted); margin-top:1px;">Jun 2026</div>
+          </div>
+          <span class="day-badge badge-past">Past</span>
+        </div>
+        <div class="day-divider"></div>
+        <div class="focus-stat">
+          <div class="focus-stat-label">Focus time</div>
+          <div class="focus-stat-value">1h 30min</div>
+          <div class="focus-bar-track"><div class="focus-bar-fill fill-low" style="width:50%"></div></div>
+        </div>
+        <div class="gap-row gap-short">
+          <div class="gap-dot dot-short"></div>
+          −1h 30min short
+        </div>
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;">
+          <div style="font-size:0.72rem;color:var(--muted);text-align:center;line-height:1.5;">
+            Busy day —<br>no action available
+          </div>
+        </div>
+      </div>
+
+      <!-- WED 10 — OoO -->
+      <div class="day-col past ooo">
+        <div class="day-header">
+          <div>
+            <div class="day-name">Wed</div>
+            <div class="day-date">10</div>
+            <div style="font-size:0.72rem; color:var(--muted); margin-top:1px;">Jun 2026</div>
+          </div>
+          <span class="day-badge badge-ooo">OoO</span>
+        </div>
+        <div class="day-divider"></div>
+        <div class="ooo-content">
+          <div class="ooo-icon">🏖</div>
+          <div class="ooo-text">Out of office</div>
+          <div style="font-size:0.68rem;color:var(--muted);text-align:center;margin-top:2px;">No focus blocks scheduled</div>
+        </div>
+      </div>
+
+      <!-- THU 11 — past, conflict -->
+      <div class="day-col past">
+        <div class="day-header">
+          <div>
+            <div class="day-name">Thu</div>
+            <div class="day-date">11</div>
+            <div style="font-size:0.72rem; color:var(--muted); margin-top:1px;">Jun 2026</div>
+          </div>
+          <span class="day-badge badge-past">Past</span>
+        </div>
+        <div class="day-divider"></div>
+        <div class="focus-stat">
+          <div class="focus-stat-label">Focus time</div>
+          <div class="focus-stat-value">1h 30min</div>
+          <div class="focus-bar-track"><div class="focus-bar-fill fill-partial" style="width:50%"></div></div>
+        </div>
+        <div class="gap-row gap-short">
+          <div class="gap-dot dot-short"></div>
+          −1h 30min short
+        </div>
+        <div class="conflict-list">
+          <div class="conflict-item">
+            <strong>'Product sync'</strong>
+            eats 30min of focus block 10:00–11:30
+          </div>
+        </div>
+        <div style="flex:1;display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px;">
+          <div style="font-size:0.68rem;color:var(--muted);text-align:center;">Past — no action available</div>
+        </div>
+      </div>
+
+      <!-- FRI 12 — TODAY, active -->
+      <div class="day-col today">
+        <div class="day-header">
+          <div>
+            <div class="day-name">Fri</div>
+            <div class="day-date">12</div>
+            <div style="font-size:0.72rem; color:var(--muted); margin-top:1px;">Jun 2026</div>
+          </div>
+          <span class="day-badge badge-today">Today</span>
+        </div>
+        <div class="day-divider"></div>
+        <div class="focus-stat">
+          <div class="focus-stat-label">Focus time</div>
+          <div class="focus-stat-value">1h 30min</div>
+          <div class="focus-bar-track"><div class="focus-bar-fill fill-low" style="width:50%"></div></div>
+        </div>
+        <div class="gap-row gap-short">
+          <div class="gap-dot dot-short"></div>
+          −1h 30min to target
+        </div>
+        <div class="conflict-list">
+          <div class="conflict-item">
+            <strong>'Weekly sync'</strong>
+            eats 30min of focus block 09:00–10:30
+          </div>
+        </div>
+        <div class="proposals">
+          <div class="proposals-label">Proposals</div>
+          <div class="proposal-item">
+            <span class="proposal-pill pill-delete">delete</span>
+            <span class="proposal-time" style="color:var(--muted);text-decoration:line-through">09:00–10:30</span>
+          </div>
+          <div class="proposal-item">
+            <span class="proposal-pill pill-split">split</span>
+            <span class="proposal-time">09:00–09:30</span>
+            <span class="proposal-dur">30min</span>
+          </div>
+          <div class="proposal-item">
+            <span class="proposal-pill pill-split">split</span>
+            <span class="proposal-time">10:30–11:30</span>
+            <span class="proposal-dur">60min</span>
+          </div>
+          <div class="proposal-item">
+            <span class="proposal-pill pill-new">new</span>
+            <span class="proposal-time">14:00–15:00</span>
+            <span class="proposal-dur">60min</span>
+          </div>
+        </div>
+        <div class="action-area">
+          <button class="btn btn-primary">Schedule</button>
+        </div>
+      </div>
+
+    </div><!-- /week-grid -->
+  </div><!-- /wrap -->
+</body>
+</html>

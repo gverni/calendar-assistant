@@ -1,0 +1,18 @@
+{
+  "name": "calendar-assistant",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Google Apps Script: Calendar Assistant — debriefs and focus time protection.",
+  "scripts": {
+    "push":    "clasp push",
+    "release": "node scripts/release.mjs",
+    "urls":    "node scripts/urls.mjs",
+    "login":   "clasp login",
+    "open":    "clasp open"
+  },
+  "devDependencies": {
+    "@google/clasp": "^2.4.2",
+    "google-auth-library": "^9.15.1",
+    "googleapis": "^144.0.0"
+  }
+}
