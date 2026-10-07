@@ -95,6 +95,21 @@ npx clasp create --type standalone \
 npm run release
 ```
 
+If step 5 fails with a "Missing `.clasp.json`" error, create it yourself and re-run step 5. The script ID is the long string between `/d/` and `/edit` in the URL clasp printed in step 4:
+
+```
+Created new standalone script: https://script.google.com/d/<SCRIPT_ID>/edit
+```
+
+Create `.clasp.json` at the repo root with that ID:
+
+```json
+{
+  "scriptId": "<paste scriptId here>",
+  "rootDir": "src"
+}
+```
+
 Open the printed URL in your browser. Google will ask you to authorise Calendar access — click **Authorise**, complete the sign-in flow, then open the URL again.
 
 Share the URL with your team. Each person will be asked to authorise on their first visit.

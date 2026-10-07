@@ -48,7 +48,7 @@ async function deploy(deploymentId) {
 }
 
 async function main() {
-  if (!fs.existsSync(CLASP_PROJECT)) die('Missing .clasp.json — copy from .clasp.json.example');
+  if (!fs.existsSync(CLASP_PROJECT)) die('Missing .clasp.json — run `npx clasp create --type standalone --title "Calendar Assistant" --rootDir src` first (see README → Initial setup).');
 
   // If we already have a prod deployment ID, patch Web.gs before pushing
   // so the deployed version already has the correct ID baked in.
