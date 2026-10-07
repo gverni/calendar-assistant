@@ -109,8 +109,9 @@ Create `.clasp.json` at the repo root with that ID:
   "rootDir": "src"
 }
 ```
+And re-run `npm run release`.
 
-Open the printed URL in your browser. Google will ask you to authorise Calendar access — click **Authorise**, complete the sign-in flow, then open the URL again.
+Once step 5 execute succesfully, open the printed URL in your browser. Google will ask you to authorise Calendar access — click **Authorise**, complete the sign-in flow, then open the URL again.
 
 Share the URL with your team. Each person will be asked to authorise on their first visit.
 
